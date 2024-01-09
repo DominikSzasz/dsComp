@@ -1,1 +1,5 @@
 main
+out
+out.o
+out.asm
+input.ds
