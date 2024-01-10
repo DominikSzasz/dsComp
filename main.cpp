@@ -1,9 +1,25 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <optional>
+#include <vector>
 
+enum class TokenType {
+    _exit,
+    _int_lit,
+    _semi,
+    _open_paren,
+    _close_paren,
+    _stdout,
+    _var,
+    _eq,
+};
+struct Token {
+    TokenType type;
+    std::optional<std::string> value {};
+};
 void generate(std::string* asmcode);
-std::string template_read(const std::string& filename);
+std::vector<Token> parse(std::string* content, int len);
 
 std::string genExit(int returnval);
 std::string genSTDOUT(std::string val);
@@ -21,13 +37,55 @@ int main() {
         }
         file.close();
     }
-    generate(&content);
+    parse(&content, content.size());
+    //generate(&content);
     return 0;
 }
+std::vector<Token> parse(std::string* content, int len)
+{
+    std::vector<Token> tokens;
+    std::string buf;
+    for (std::size_t i = 0; i < content->size(); ++i) {
+        char ch = (*content)[i];
 
+        // Check if the character is alphanumeric
+        if (std::isalpha(ch)) {
+            // Print the current character
+            buf += ch;
+            // Continue printing while the next character is alphanumeric
+            while (i + 1 < content->size() && std::isalnum((*content)[i + 1])) {
+                buf += (*content)[i + 1];
+                ++i;
+            }
+            if(buf == "exit")
+                {
+                    tokens.push_back({.type = TokenType::_exit});
+                    buf.clear();
+                }
+            else if(buf == "var")
+            {
+                tokens.push_back({.type = TokenType::_var});
+                buf.clear();
+            }
+            else if(buf.size() > 0)
+            {
+                std::cout << buf;
+                std:perror("Token Not Found");
+            }
+                
+        }
+    }
+    // std::cout << buf;
+    // if(tokens[0].type == TokenType::_int_lit)
+    // {
+    //     std::cout << "test";
+    for (const auto& token : tokens) {
+        std::cout << "Token Type: " << static_cast<int>(token.type) << std::endl;
+    }
+    return tokens;
+}
 void generate(std::string* asmcode)
 {
-    std::string buf;
     std::string sectiondata = "section .data\n";
     std::string sectionbss = "section .bss\n";
     std::string sectiontext = "section .text\n\tglobal _main\n_main:\n";
