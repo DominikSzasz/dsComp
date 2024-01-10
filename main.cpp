@@ -11,15 +11,29 @@ enum class TokenType {
     _open_paren,
     _close_paren,
     _stdout,
-    _var,
     _eq,
+    _strType,
+    _intType,
+    _str,
+    _int,
+};
+enum class StatementType {
+    _stdout,
+    _exit,
+    _int,
+    _str,
 };
 struct Token {
     TokenType type;
     std::optional<std::string> value {};
 };
+struct Statement {
+    StatementType type;
+    std::optional<std::string> value {};
+};
 void generate(std::string* asmcode);
 std::vector<Token> parse(std::string* content, int len);
+std::vector<Statement> statementize(std::vector<Token> tokens);
 
 std::string genExit(int returnval);
 std::string genSTDOUT(std::string val);
@@ -37,9 +51,44 @@ int main() {
         }
         file.close();
     }
-    parse(&content, content.size());
+    std::vector<Token> parsed = parse(&content, content.size());
+    statementize(parsed);
     //generate(&content);
     return 0;
+}
+std::vector<Statement> statementize(std::vector<Token> tokens)
+{
+    std::vector<Statement> statements;
+    for (int i = 0; i < tokens.size(); i++)
+    {
+
+        //std::cout << "Token Type: " << static_cast<int>(tokens[i].type) << std::endl;
+        if (tokens[i].type == TokenType::_exit)
+        {
+            // std::cout << "Token Type: " << static_cast<int>(tokens[i].type) << std::endl;
+
+            if (tokens[i+1].type == TokenType::_open_paren 
+            && tokens[i+2].type == TokenType::_int
+            && tokens[i+3].type == TokenType::_close_paren 
+            && tokens[i+4].type == TokenType::_semi)
+            {
+            if (tokens[i+2].value.has_value()) 
+            {
+                statements.push_back({.type = StatementType::_exit, .value = tokens[i+2].value.value()});
+                i+=4;
+            }
+            }
+            else
+            {
+                std::perror("Invalid Exit Syntax");
+            }
+        }
+
+    }
+    for (const auto& statement : statements) {
+        std::cout << "Statement Type: " << static_cast<int>(statement.type) << std::endl;
+    }
+    return statements;
 }
 std::vector<Token> parse(std::string* content, int len)
 {
@@ -47,10 +96,10 @@ std::vector<Token> parse(std::string* content, int len)
     std::string buf;
     for (std::size_t i = 0; i < content->size(); ++i) {
         char ch = (*content)[i];
-
         // Check if the character is alphanumeric
         if (std::isalpha(ch)) {
             // Print the current character
+            buf.clear();
             buf += ch;
             // Continue printing while the next character is alphanumeric
             while (i + 1 < content->size() && std::isalnum((*content)[i + 1])) {
@@ -61,27 +110,62 @@ std::vector<Token> parse(std::string* content, int len)
                 {
                     tokens.push_back({.type = TokenType::_exit});
                     buf.clear();
+                    
                 }
-            else if(buf == "var")
+            else if(buf == "str")
             {
-                tokens.push_back({.type = TokenType::_var});
+                tokens.push_back({.type = TokenType::_strType});
                 buf.clear();
             }
-            else if(buf.size() > 0)
+            else if(buf == "int")
             {
-                std::cout << buf;
-                std:perror("Token Not Found");
+                tokens.push_back({.type = TokenType::_intType});
+                buf.clear();
             }
-                
+            else if(buf == "stdout")
+            {
+                tokens.push_back({.type = TokenType::_stdout});
+                buf.clear();
+            }
+            // else if(ch.size() > 0)
+            // {
+            //     std::cout << buf;
+            //     std:perror("Token Not Found");
+            // }
+            
+        }
+        else if (ch == '(')
+            tokens.push_back({.type = TokenType::_open_paren});
+        
+        else if (ch == ')')
+            tokens.push_back({.type = TokenType::_close_paren});
+
+        else if (ch == '=')
+            tokens.push_back({.type = TokenType::_eq});
+    
+        else if (ch == ';')
+            tokens.push_back({.type = TokenType::_semi});
+        
+        else if (std::isdigit(ch))
+        {
+            buf.clear();
+            buf += ch;
+            if(isdigit((*content)[i + 1]))
+            {
+                while (i + 1 < content->size() && std::isdigit((*content)[i + 1])) {
+                ++i;
+                buf += (*content)[i];
+            }
+            }
+            
+            tokens.push_back({.type = TokenType::_int, .value = buf});
+            continue;
         }
     }
-    // std::cout << buf;
-    // if(tokens[0].type == TokenType::_int_lit)
-    // {
-    //     std::cout << "test";
-    for (const auto& token : tokens) {
-        std::cout << "Token Type: " << static_cast<int>(token.type) << std::endl;
-    }
+
+    // for (const auto& token : tokens) {
+    //     std::cout << "Token Type: " << static_cast<int>(token.type) << std::endl;
+    // }
     return tokens;
 }
 void generate(std::string* asmcode)
