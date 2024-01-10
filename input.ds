@@ -1,4 +1,4 @@
 #exit with exit code 0
 exit(0);
-exit(0);
-asd
+exit(55);
+exit(7889);
