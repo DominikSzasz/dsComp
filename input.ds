@@ -1,4 +1,5 @@
-#exit with exit code 0
+#ez a program kiirja hogy hello aztan kilep
+
+stdout("hello");
+
 exit(0);
-exit(55);
-exit(7889);

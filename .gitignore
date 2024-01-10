@@ -4,3 +4,5 @@ out.o
 out.asm
 input.ds
 .vscode/tasks.json
+.vscode/settings.json
+out.asm
